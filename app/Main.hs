@@ -6,7 +6,9 @@ module Main (main) where
 
 import Data.String.Interpolate (i)
 import Data.Text (Text, pack, replace, unpack)
-import Hakyll (Identifier, Item (Item), MonadMetadata (getMatches), Rules, applyAsTemplate, compile, composeRoutes, compressCssCompiler, constField, constRoute, copyFileCompiler, defaultContext, getResourceBody, getUnderlying, gsubRoute, hakyll, hasVersion, idRoute, listField, loadAndApplyTemplate, match, pandocCompiler, route, setExtension, templateBodyCompiler, toFilePath, version, (.&&.))
+import Data.Time (toGregorian)
+import Data.Time.Clock
+import Hakyll (Context, Identifier, Item (Item), MonadMetadata (getMatches), Rules, applyAsTemplate, compile, composeRoutes, compressCssCompiler, constField, constRoute, copyFileCompiler, defaultContext, getResourceBody, getUnderlying, gsubRoute, hakyll, hasVersion, idRoute, listField, loadAndApplyTemplate, match, pandocCompiler, preprocess, route, setExtension, templateBodyCompiler, toFilePath, version, (.&&.))
 import Hakyll.Images (compressJpgCompiler, loadImage, scaleImageCompiler)
 
 baseTemplate :: Identifier
@@ -25,6 +27,7 @@ main = hakyll do
   generateMainPortfolioPage
   generatePages
   generatePosts
+  compileImages
 
 -- TODO: generate pages for tags
 
@@ -44,9 +47,10 @@ copyFullQualityPictures = match "content/media/pictures/*.jpg" $ version "origin
 compilePagesForPictures :: Rules ()
 compilePagesForPictures = match "content/media/pictures/*.jpg" $ version "picturePage" do
   route $ composeRoutes (gsubRoute "/media/pictures/" (const "/portfolio-entries/")) (setExtension "html")
+  ctx <- getContext
   compile do
     url <- getUnderlying
-    let pageContext = defaultContext <> constField "picture_url" (getPictureUrl $ toFilePath url)
+    let pageContext = ctx <> constField "picture_url" (getPictureUrl $ toFilePath url)
     getResourceBody
       >>= loadAndApplyTemplate pictureTemplate pageContext
       >>= loadAndApplyTemplate baseTemplate pageContext
@@ -57,45 +61,61 @@ generateThumbnailsForPictures = match "content/media/pictures/*.jpg" $ version "
   compile $
     loadImage
       >>= scaleImageCompiler 800 800
-      >>= compressJpgCompiler (50 :: Integer)
+      >>= compressJpgCompiler (90 :: Integer)
 
 generateMainPortfolioPage :: Rules ()
 generateMainPortfolioPage = match "content/templates/index-template.html" $ version "page" do
-  route $ constRoute "index.html"
+  route $ constRoute "content/index.html"
+  ctx <- getContext
   compile do
+    -- TODO: ensure ordering of images based on number in name
     photoIds <- getMatches ("content/media/pictures/*.jpg" .&&. hasVersion "thumbnail")
     let photoHtmls = map (\iden -> (iden, getGalleryHTML (getThumbnailUrl (toFilePath iden)) (getHtmlUrl (toFilePath iden)))) photoIds
     let photos = fmap (uncurry Item) photoHtmls
     let photosContext =
-          listField "photos" defaultContext (pure photos)
+          listField "photos" ctx (pure photos)
             <> constField "title" "Portfolio"
-            <> defaultContext
+            <> ctx
     getResourceBody
       >>= applyAsTemplate photosContext
       >>= loadAndApplyTemplate baseTemplate photosContext
 
 generatePages :: Rules ()
 generatePages = match "content/pages/*.md" do
-  route $ composeRoutes (gsubRoute "content/pages/" $ const "./") (setExtension "html")
+  route $ composeRoutes (gsubRoute "content/pages/" $ const "content/") (setExtension "html")
+  ctx <- getContext
   compile do
     pandocCompiler
-      >>= loadAndApplyTemplate baseTemplate defaultContext
+      >>= loadAndApplyTemplate baseTemplate ctx
 
 generatePosts :: Rules ()
 generatePosts = match "content/posts/*.md" do
-  route $ composeRoutes (gsubRoute "content/posts/" $ const "./post/") (setExtension "html")
+  route $ setExtension "html"
+  ctx <- getContext
   compile do
     pandocCompiler
-      >>= loadAndApplyTemplate baseTemplate defaultContext
+      >>= loadAndApplyTemplate baseTemplate ctx
+
+compileImages :: Rules ()
+compileImages = match "content/media/images/*" do
+  route idRoute
+  compile do
+    loadImage
+      >>= compressJpgCompiler (80 :: Integer)
+
+getContext :: Rules (Context String)
+getContext = preprocess $ do
+  (year, _, _) <- toGregorian . utctDay <$> getCurrentTime
+  pure (defaultContext <> constField "year" (show year))
 
 getPictureUrl :: String -> String
 getPictureUrl = replaceStr "content/" "../"
 
 getThumbnailUrl :: String -> String
-getThumbnailUrl = replaceStr "/pictures/" "/pictures/thumbs/"
+getThumbnailUrl = replaceStr "content/media/pictures/" "./media/pictures/thumbs/"
 
 getHtmlUrl :: String -> String
-getHtmlUrl = replaceStr ".jpg" ".html" . replaceStr "/media/pictures/" "/portfolio-entries/"
+getHtmlUrl = replaceStr ".jpg" ".html" . replaceStr "content/media/pictures/" "./portfolio-entries/"
 
 replaceStr :: Text -> Text -> String -> String
 replaceStr needle replacement haystack = unpack $ replace needle replacement $ pack haystack
@@ -106,7 +126,7 @@ getGalleryHTML thumbUrl pageUrl =
   <div class="box">
       <div class="boxInner">
           <a href="#{pageUrl}">
-              <img src="#{thumbUrl}">
+              <img src="#{thumbUrl}" loading="lazy" />
           </a>
       </div>
   </div>

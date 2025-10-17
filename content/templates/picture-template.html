@@ -1,8 +1,12 @@
-<img src="$picture_url$"/>
-<p>Technical details</p>
-<div class="techincal-details">
-    $if(camera)$<p class="camera">$camera$</p>$endif$
-    $if(lens)$<p class="lens">$lens$</p>$endif$
-    $if(film)$<p class="lens">$film$</p>$endif$
+<div class="picture-display content">
+    <img src="$picture_url$"/>
+    <div class="details">
+        <p class="title">Technical details</p>
+        <div class="technical-details">
+            $if(camera)$<p class="camera">Camera: $camera$</p>$endif$
+            $if(lens)$<p class="lens">Lens: $lens$</p>$endif$
+            $if(film)$<p class="film">Film: $film$</p>$endif$
+        </div>
+        $if(description)$<div class="description">$description$</div>$endif$
+    </div>
 </div>
-$if(description)$<div class="description">$description$</div>$endif$
