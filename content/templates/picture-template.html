@@ -1,7 +1,10 @@
 <div class="picture-display content">
-    <img src="$picture_url$"/>
+    <div class="image-holder">
+        <img loading="lazy" src="$picture_url$"/>
+    </div>
     <div class="details">
-        <p class="title">Technical details</p>
+        <h1 class="title">$title$</h1>
+        <p class="details-title">Technical details:</p>
         <div class="technical-details">
             $if(camera)$<p class="camera">Camera: $camera$</p>$endif$
             $if(lens)$<p class="lens">Lens: $lens$</p>$endif$

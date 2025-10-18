@@ -21,6 +21,7 @@ main :: IO ()
 main = hakyll do
   loadTemplates
   compileCssFiles
+  copyFonts
   copyFullQualityPictures
   compilePagesForPictures
   generateThumbnailsForPictures
@@ -38,6 +39,11 @@ compileCssFiles :: Rules ()
 compileCssFiles = match "content/css/*" do
   route idRoute
   compile compressCssCompiler
+
+copyFonts :: Rules ()
+copyFonts = match "content/fonts/*" do
+  route idRoute
+  compile copyFileCompiler
 
 copyFullQualityPictures :: Rules ()
 copyFullQualityPictures = match "content/media/pictures/*.jpg" $ version "original" do
@@ -60,8 +66,8 @@ generateThumbnailsForPictures = match "content/media/pictures/*.jpg" $ version "
   route $ gsubRoute "/pictures/" $ const "/pictures/thumbs/"
   compile $
     loadImage
-      >>= scaleImageCompiler 800 800
       >>= compressJpgCompiler (90 :: Integer)
+      >>= scaleImageCompiler 800 800
 
 generateMainPortfolioPage :: Rules ()
 generateMainPortfolioPage = match "content/templates/index-template.html" $ version "page" do
@@ -124,10 +130,8 @@ getGalleryHTML :: String -> String -> String
 getGalleryHTML thumbUrl pageUrl =
   [i|
   <div class="box">
-      <div class="boxInner">
-          <a href="#{pageUrl}">
-              <img src="#{thumbUrl}" loading="lazy" />
-          </a>
-      </div>
+      <a href="#{pageUrl}">
+          <img src="#{thumbUrl}" loading="lazy" />
+      </a>
   </div>
   |]
