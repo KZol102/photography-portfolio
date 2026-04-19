@@ -26,3 +26,5 @@ cabal.project.local~
 # Hakyll
 _site/*
 _cache/*
+
+content/media/pictures/thumbnails/*
