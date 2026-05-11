@@ -3,7 +3,7 @@ title: Minolta MD 50mm f/1.4
 category: camera
 ---
 
-![The Minolta MD 50mm f/1.4 resting on my desk with its lens cap next to it](../media/images/DSC00613.jpg)
+![](../media/images/DSC00613.jpg)
 
 I got this lens with my XD-7. So far it seems like a lovely lens and a contender to take over as my main lens (dethroning the 50mm f/1.7).
 It's bigger and heavier but not as much to make it cumbersome to use, especially on the much smaller body that is the XD-7.
